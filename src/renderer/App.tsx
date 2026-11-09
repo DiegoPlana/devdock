@@ -136,7 +136,16 @@ export default function App(){
   const dirty=gitProjects.filter(p=>p.git.modified+p.git.untracked>0)
   const gitSelected=gitProjects.find(p=>p.id===gitId)
   const selectedCommand=commands.find(c=>c.id===commandId)
-  useEffect(()=>{if(!gitId&&projects.length)setGitId(projects[0]!.id)},[projects,gitId])
+  useEffect(()=>{
+    if(!gitId&&projects.length)setGitId(projects[0]!.id)
+    if(page==='git'){
+      const candidates=projects.filter(p=>p.git.isRepository)
+      if(candidates.length&&!candidates.some(p=>p.id===gitId)){
+        setGitId(candidates[0]!.id)
+        setGitInfo(null)
+      }
+    }
+  },[projects,gitId,page])
 
   function projectCard(p:Project){return <article className="project-card" key={p.id}>
     <div className="card-head"><span className="project-icon"><FolderGit2 size={22}/></span>
