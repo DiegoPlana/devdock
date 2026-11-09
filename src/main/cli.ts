@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { findCommand } from './dependencies'
+import { findCommand } from './dependencies.ts'
 import type { Command, GitDetails, GithubStatus, Project, RemoteRepo, RunResult, ToolInfo } from '../shared/types'
 
 export const builtins:Command[]=[
