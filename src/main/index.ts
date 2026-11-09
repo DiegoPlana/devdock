@@ -5,6 +5,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
 import { Store, validId } from './store'
+import { definitions, listDependencies, installDependency } from './dependencies'
 import { snapshot, checked, exec, gitDetails, githubStatus, githubRepos, detectTools, builtins } from './cli'
 import type { Command } from '../shared/types'
 
@@ -104,10 +105,42 @@ function handlers():void{
   ipcMain.handle('resources:save',(event,input:unknown)=>{authorized(event);store.saveResource(input)})
   ipcMain.handle('resources:delete',(event,id:unknown)=>{authorized(event);store.deleteResource(id)})
   ipcMain.handle('tools:list',event=>{authorized(event);return detectTools()})
+  ipcMain.handle('dependencies:list',event=>{authorized(event);return listDependencies()})
+  ipcMain.handle('dependencies:install',async (event,id:unknown)=>{
+    authorized(event)
+    const dependency=definitions.find(d=>d.id===id)
+    if(!dependency)throw new Error('Dependencia no permitida')
+    if(!win)throw new Error('Ventana no disponible')
+    const decision=await dialog.showMessageBox(win,{
+      type:'question',title:'Permiso para instalar herramientas',
+      message:'¿Quieres instalar '+dependency.name+'?',
+      detail:'DEVDОCK usará el gestor de paquetes del sistema (winget en Windows o apt en Linux compatible). La instalación puede necesitar permisos de administrador o reiniciar aplicaciones. Solo se instalará esta herramienta.',
+      buttons:['Cancelar','Instalar'],defaultId:0,cancelId:0,noLink:true
+    })
+    if(decision.response!==1)return {ok:false,details:'Instalación cancelada por el usuario'}
+    return installDependency(id)
+  })
+  ipcMain.handle('setup:is-complete',event=>{authorized(event);return store.setupComplete()})
+  ipcMain.handle('setup:complete',event=>{authorized(event);store.markSetupComplete()})
+  ipcMain.handle('system:create-shortcut',async event=>{
+    authorized(event)
+    if(process.platform!=='win32'||!app.isPackaged)throw new Error('Solo disponible en la aplicación instalada en Windows')
+    if(!win)throw new Error('Ventana no disponible')
+    const response=await dialog.showMessageBox(win,{
+      type:'question',title:'Crear acceso directo',message:'¿Crear un acceso directo de DEVDОCK en el escritorio?',
+      detail:'El acceso directo apuntará al ejecutable instalado en este ordenador.',
+      buttons:['Cancelar','Crear acceso directo'],defaultId:0,cancelId:0
+    })
+    if(response.response!==1)throw new Error('Operación cancelada')
+    const shortcut=join(app.getPath('desktop'),'DEVDОCK.lnk')
+    if(!shell.writeShortcutLink(shortcut,'create',{
+      target:process.execPath,icon:process.execPath,iconIndex:0,description:'DEVDОCK — Centro de desarrollo'
+    }))throw new Error('Windows no ha podido crear el acceso directo')
+  })
 }
 function windowCreate():void{
   win=new BrowserWindow({
-    title:'DEVDОCK',width:1420,height:850,minWidth:970,minHeight:640,
+    title:'DEVDОCK',icon:app.isPackaged?join(process.resourcesPath,'icon.png'):join(app.getAppPath(),'assets','icon.png'),width:1420,height:850,minWidth:970,minHeight:640,
     backgroundColor:'#0b1420',autoHideMenuBar:true,
     webPreferences:{
       preload:join(__dirname,'../preload/index.cjs'),

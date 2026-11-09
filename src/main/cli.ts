@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import { findCommand } from './dependencies'
 import type { Command, GitDetails, GithubStatus, Project, RemoteRepo, RunResult, ToolInfo } from '../shared/types'
 
 export const builtins:Command[]=[
@@ -12,7 +13,7 @@ export const builtins:Command[]=[
 ]
 export function exec(executable:string,args:string[],cwd?:string,timeout=20000):Promise<RunResult>{
   return new Promise(resolve=>{
-    execFile(executable,args,{
+    execFile(findCommand(executable),args,{
       cwd,shell:false,windowsHide:true,timeout,maxBuffer:2*1024*1024,
       env:{...process.env,GIT_TERMINAL_PROMPT:'0',GCM_INTERACTIVE:'Never'}
     },(error,stdout,stderr)=>{

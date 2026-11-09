@@ -19,7 +19,7 @@ jobs:
       - run: npm run dist:win
       - uses: actions/upload-artifact@v4
         with:
-          name: DEVDОCK-Windows-v0.3.0
+          name: DEVDОCK-Windows-v0.3.1
           path: release/*.exe
           if-no-files-found: error
   linux:
@@ -35,6 +35,6 @@ jobs:
       - run: npm run dist:linux
       - uses: actions/upload-artifact@v4
         with:
-          name: DEVDОCK-Linux-v0.3.0
+          name: DEVDОCK-Linux-v0.3.1
           path: release/*.AppImage
           if-no-files-found: error

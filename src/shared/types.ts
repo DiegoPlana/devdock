@@ -55,6 +55,20 @@ export interface GithubStatus {
   username: string | null
   hint: string
 }
+export interface DependencyInfo {
+  id: string
+  name: string
+  purpose: string
+  installed: boolean
+  version: string
+  recommended: boolean
+  installable: boolean
+  instructions: string
+}
+export interface DependencyInstallResult {
+  ok: boolean
+  details: string
+}
 export interface DevdockAPI {
   projects(): Promise<Project[]>
   addProject(): Promise<Project | null>
@@ -76,4 +90,9 @@ export interface DevdockAPI {
   saveResource(resource: {id?:string;title:string;kind:'note'|'link'|'snippet';category:string;content:string}): Promise<void>
   deleteResource(id:string): Promise<void>
   tools(): Promise<ToolInfo[]>
+  dependencies(): Promise<DependencyInfo[]>
+  installDependency(id: string): Promise<DependencyInstallResult>
+  setupComplete(): Promise<boolean>
+  completeSetup(): Promise<void>
+  createDesktopShortcut(): Promise<void>
 }

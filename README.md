@@ -1,64 +1,54 @@
-# DEVDОCK v0.3.0
+# DEVDОCK v0.3.1
 
-Aplicación personal de escritorio para Windows y Linux. **Proyectos locales + Git + GitHub + comandos + biblioteca + herramientas**. Todos los datos locales se guardan en SQLite y se mantienen entre reinicios.
+Centro de productividad para proyectos y repositorios, con icono propio y asistente de preparación del entorno.
 
-## Instalación de la versión descargable
+## Descargar e instalar
 
-Entra en **Actions → DEVDОCK Build → última ejecución correcta → Artifacts**. Descarga `DEVDОCK-Windows-v0.3.0`, extrae el ZIP y ejecuta el instalador `.exe`. En Linux descarga el AppImage. Los instaladores generados automáticamente no están firmados.
+Ve a **Actions → DEVDОCK Build → última ejecución correcta**. En **Artifacts** descarga `DEVDОCK-Windows-v0.3.1` (Windows) o `DEVDОCK-Linux-v0.3.1` (Linux). Descomprime e instala el ejecutable. GitHub Actions genera el .exe y el AppImage; el instalador aún no está firmado.
 
-> Si Actions aparece en rojo, la compilación ha fallado y no hay un instalador válido: revisa el log y crea un issue.
+**El instalador es autónomo:** trae Electron y sus bibliotecas. **No necesitas instalar Node.js ni npm para usar DEVDОCK.** Node.js 22.12+ solo es necesario para desarrollar o compilar el proyecto fuente.
 
-## Desarrollo en tu ordenador
+El instalador de Windows intenta crear accesos directos en Inicio y Escritorio. Si borras el acceso directo: en **Ajustes → Crear acceso directo** puedes recuperarlo. También puedes iniciar DEVDОCK desde el menú Inicio.
 
-Requiere **Node.js 22.12+**. Ejecuta:
+## Nuevo: asistente y dependencias
+
+Al arrancar la versión 0.3.1 por primera vez, aparece un asistente de bienvenida. Detecta las herramientas instaladas y propone **Git** y **GitHub CLI**; Docker, Node.js, Python, Java y Maven son opcionales.
+
+- Selecciona lo que quieras instalar y pulsa **Instalar seleccionadas**.
+- DEVDОCK vuelve a preguntarte antes de cada instalación; puedes cancelarla.
+- En Windows usa **winget** con identificadores permitidos y acepta el control UAC si el sistema lo solicita.
+- En Linux con `apt-get` y `pkexec` disponibles ofrece instalación mediante el gestor del sistema; en otras distribuciones muestra instrucciones.
+- Si falla la instalación, se muestra un error y la app sigue funcionando.
+- Puedes repetir las comprobaciones cuando quieras en **Dependencias**.
+- La instalación se hace solo tras interacción expresa y no existe instalación silenciosa al iniciarse.
+
+**Importante:** GitHub CLI necesita autenticación: usa `gh auth login --hostname github.com --git-protocol https --web` y `gh auth setup-git`. Si instalas herramientas estando DEVDОCK abierto, puede hacer falta reiniciar la aplicación para actualizar el PATH. Docker Desktop puede requerir WSL2 y/o reiniciar Windows.
+
+## Qué hay dentro
+
+- Dashboard, gestor de proyectos, Git local, GitHub (a través de `gh`), comandos, biblioteca y gestor de herramientas.
+- Base SQLite guardada en los datos de usuario del sistema.
+- Autenticación GitHub delegada a GitHub CLI. DEVDОCK no guarda contraseñas ni tokens.
+- Los comandos de Git o del centro de comandos pueden modificar repositorios: requieren confirmación en la interfaz cuando corresponde.
+
+## Desarrollo
 
 ```bash
 npm install
-npm run dev
-```
-
-Pruebas y compilación:
-
-```bash
 npm test
 npm run typecheck
-npm run build
+npm run dev
 npm run dist:win
 ```
 
-## Conectar GitHub
+`scripts/generate-icons.mjs` genera automáticamente `assets/icon.png` y `assets/icon.ico` a partir de `assets/logo.svg` durante `npm run dev` y `npm run build`. Los iconos del .exe y de la aplicación instalada usan esos archivos. No ejecutes el generador antes de instalar dependencias.
 
-DEVDОCK **no utiliza tu conexión de ChatGPT a GitHub**. Utiliza la sesión local de **GitHub CLI (`gh`)**; tu contraseña/token no se almacena en DEVDОCK.
+## Pendiente
 
-1. Instala [GitHub CLI](https://cli.github.com/). En Windows: `winget install --id GitHub.cli --exact`.
-2. Abre una nueva terminal: `gh auth login --hostname github.com --git-protocol https --web`.
-3. Ejecuta `gh auth setup-git` para que Git use las credenciales de GitHub CLI cuando lo necesite.
-4. Reinicia DEVDОCK si acabas de instalar GitHub CLI. En **GitHub**, pulsa **Comprobar conexión** y **Cargar repositorios**.
-5. Selecciona **Clonar** y elige una carpeta padre vacía. El repositorio aparecerá también en tus proyectos locales.
+- Terminal PTY interactiva.
+- Configuración automática de WSL2/Docker y otros requisitos de cada herramienta (no deben ejecutarse sin explicar los cambios).
+- Compatibilidad con más gestores de paquetes Linux.
+- Firma digital de instaladores.
+- Instalador integrado para actualizaciones de DEVDОCK.
 
-La lista carga hasta 100 repositorios asociados a tu cuenta. Para acceder a repositorios de organizaciones o más de 100 habrá que ampliar la búsqueda en una versión posterior. Los repositorios privados requieren permisos válidos de GitHub CLI. Si Git no reconoce tus credenciales, comprueba `gh auth status` y `gh auth setup-git`.
-
-## Uso
-
-- **Proyectos:** registra carpetas, clasifica, marca favoritos y abre en tu editor.
-- **Git local:** consulta archivos cambiados, commits y ejecuta fetch, pull (--ff-only), push, stage o commit (solo lo que ya está en staging).
-- **GitHub:** muestra repositorios remotos (públicos y privados autorizados), permite clonarlos y añadirlos al catálogo.
-- **Comandos:** ejecuta comandos frecuentes o personalizados en un proyecto, con argumentos separados y sin shell.
-- **Biblioteca:** notas, enlaces y snippets locales.
-- **Herramientas:** detección de Git, GitHub CLI, Docker, Node, Python, Java y Maven.
-- **Ajustes:** configura editor predeterminado.
-
-## Seguridad
-
-Los comandos se ejecutan sin shell (`execFile`), con límite de tiempo. **Pueden modificar archivos**: las acciones peligrosas solicitan confirmación en la interfaz. Las operaciones Git nunca reescriben el historial mediante comandos automáticos. La aplicación usa IPC con una lista de operaciones autorizadas, `contextIsolation`, sandbox y sin acceso Node desde la interfaz.
-
-La terminal interactiva PTY, automatizaciones complejas, gestores Docker visuales y soporte nativo para OAuth sin GitHub CLI siguen pendientes. Este código necesita pasar la compilación de GitHub Actions antes de considerarlo instalador verificado.
-
-## Estructura
-
-`src/main`: base SQLite, procesos CLI, Git y GitHub.
-`src/preload`: API de operaciones autorizadas.
-`src/renderer`: interfaz React + CSS.
-`src/shared`: contratos TypeScript compartidos.
-
-Licencia: pendiente de elección.
+Para reportar errores utiliza **Issues** en GitHub.

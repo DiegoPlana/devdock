@@ -21,6 +21,11 @@ const api: DevdockAPI = {
   resources: () => invoke('resources:list'),
   saveResource: (resource) => invoke('resources:save', resource),
   deleteResource: (id) => invoke('resources:delete', id),
-  tools: () => invoke('tools:list')
+  tools: () => invoke('tools:list'),
+  dependencies: () => invoke('dependencies:list'),
+  installDependency: (id) => invoke('dependencies:install',id),
+  setupComplete: () => invoke('setup:is-complete'),
+  completeSetup: () => invoke('setup:complete'),
+  createDesktopShortcut: () => invoke('system:create-shortcut')
 }
 contextBridge.exposeInMainWorld('devdock', api)

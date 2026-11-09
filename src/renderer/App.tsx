@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
+import brandLogo from '../../assets/logo.svg'
+import { DependencyCenter, FirstRunSetup } from './Dependencies'
 import type { FormEvent } from 'react'
 import { LayoutDashboard, FolderGit2, GitBranch, Github, Terminal, BookOpen, Wrench, Settings,
   RefreshCw, Plus, ArrowRight, FolderOpen, Star, Trash2, Link2, Code2, Save, Activity,
   CheckCircle2, AlertCircle, DownloadCloud, Search, ShieldCheck, X, Clock3, Cloud, Copy } from 'lucide-react'
 import type { Project,RemoteRepo,GithubStatus,GitDetails,Command,RunResult,Resource,ToolInfo } from '../shared/types'
 
-type Page='home'|'projects'|'git'|'github'|'commands'|'library'|'tools'|'settings'
+type Page='home'|'projects'|'git'|'github'|'commands'|'library'|'tools'|'dependencies'|'settings'
 const nav=[
   {id:'home' as const,name:'Dashboard',icon:LayoutDashboard},
   {id:'projects' as const,name:'Proyectos',icon:FolderGit2},
@@ -14,9 +16,10 @@ const nav=[
   {id:'commands' as const,name:'Comandos',icon:Terminal},
   {id:'library' as const,name:'Biblioteca',icon:BookOpen},
   {id:'tools' as const,name:'Herramientas',icon:Wrench},
+  {id:'dependencies' as const,name:'Dependencias',icon:DownloadCloud},
   {id:'settings' as const,name:'Ajustes',icon:Settings}
 ]
-const titles:Record<Page,string>={home:'Dashboard',projects:'Mis proyectos',git:'Git local',github:'GitHub',commands:'Centro de comandos',library:'Biblioteca',tools:'Herramientas',settings:'Ajustes'}
+const titles:Record<Page,string>={home:'Dashboard',projects:'Mis proyectos',git:'Git local',github:'GitHub',commands:'Centro de comandos',library:'Biblioteca',tools:'Herramientas',dependencies:'Dependencias',settings:'Ajustes'}
 const emptyResource:{title:string;kind:Resource['kind'];category:string;content:string;id?:string}={title:'',kind:'note',category:'General',content:''}
 function describe(err:unknown):string{return err instanceof Error?err.message.replace(/^Error invoking remote method '[^']+': Error: /,''):String(err)}
 function shortDate(date:string|null):string{if(!date)return'Sin abrir';const d=new Date(date);return Number.isNaN(d.getTime())?'—':new Intl.DateTimeFormat('es-ES',{day:'2-digit',month:'short'}).format(d)}
@@ -167,13 +170,13 @@ export default function App(){
   </article>}
 
   return <div className="app">
-    <aside className="sidebar"><div className="brand"><span className="logo"><Terminal size={23}/></span>
+    <aside className="sidebar"><div className="brand"><span className="logo"><img src={brandLogo} alt="Logo DEVDОCK"/></span>
       <div><div className="brand-name">DEV<span>DOCK</span></div><small>PERSONAL WORKSPACE</small></div></div>
       <div className="nav-label">WORKSPACE</div>
       <nav>{nav.map(n=><button key={n.id} className={'nav '+(page===n.id?'selected':'')} onClick={()=>selectPage(n.id)}>
         <n.icon size={18}/><span>{n.name}</span>{n.id==='projects'&&<small>{projects.length}</small>}
       </button>)}</nav>
-      <div className="sidebar-bottom"><span className="dot"/> ENTORNO LOCAL <span>v0.3.0</span></div>
+      <div className="sidebar-bottom"><span className="dot"/> ENTORNO LOCAL <span>v0.3.1</span></div>
     </aside>
     <main><header className="topbar"><div>Workspace <span>/</span> <strong>{titles[page]}</strong></div><div className="top-right"><span className="online"><span className="dot"/> LOCAL</span><div className="avatar"><Code2 size={18}/></div></div></header>
       <section className="content">
@@ -269,15 +272,19 @@ export default function App(){
             <div className="tool-grid">{tools.map(t=><article className="tool" key={t.name}><Wrench size={23}/><div><b>{t.name}</b><small>{t.version}</small></div><span className={'status-pill '+(t.installed?'yes':'no')}>{t.installed?'Disponible':'No detectado'}</span></article>)}</div>
             <p className="hint">Una herramienta puede estar instalada aunque no esté disponible en PATH.</p>
           </>}
+          {page==='dependencies'&&<DependencyCenter/>}
           {page==='settings'&&<>
             <div className="intro"><div><div className="eyebrow">PREFERENCIAS / SETTINGS</div><h1>Configuración<span className="accent">.</span></h1><p>Personaliza cómo se abren tus proyectos.</p></div></div>
             <div className="module"><h3><Settings size={18}/> Editor predeterminado</h3><p>Al abrir un proyecto, DEVDОCK utiliza este editor o el explorador del sistema.</p>
               <select value={editor} onChange={e=>{const v=e.target.value;void action(async()=>{await window.devdock.setEditor(v);setEditor(v)},'Preferencia guardada')}}>
                 <option value="system">Explorador de archivos</option><option value="vscode">Visual Studio Code</option><option value="cursor">Cursor</option>
               </select></div>
+            <div className="module"><h3><FolderOpen size={18}/> Acceso directo de DEVDОCK</h3>
+              <p>Si has eliminado el icono del escritorio, puedes recuperarlo aquí sin volver a instalar la aplicación. Disponible en Windows instalado.</p>
+              <button className="secondary" disabled={busy} onClick={()=>void action(async()=>{await window.devdock.createDesktopShortcut()},'Acceso directo actualizado en el escritorio')}>Crear acceso directo</button></div>
             <div className="module"><h3><ShieldCheck size={18}/> Privacidad</h3><p>Todos los proyectos y recursos se guardan en tu propio ordenador. GitHub se autentica mediante la sesión de GitHub CLI.</p></div>
           </>}
         </>}
-      </section><footer> <span><span className="dot"/> DEVDОCK LOCAL</span><span>Electron · React · TypeScript · SQLite · GitHub CLI &nbsp; | &nbsp; v0.3.0</span></footer>
-    </main></div>
+      </section><footer> <span><span className="dot"/> DEVDОCK LOCAL</span><span>Electron · React · TypeScript · SQLite · GitHub CLI &nbsp; | &nbsp; v0.3.1</span></footer>
+    </main><FirstRunSetup/></div>
 }

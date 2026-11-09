@@ -64,6 +64,13 @@ export class Store {
   }
   markOpen(id:unknown): void { this.project(id);this.db.prepare('UPDATE projects SET last_opened_at=? WHERE id=?').run(new Date().toISOString(),validId(id)) }
   removeProject(id:unknown): void {this.project(id);this.db.prepare('DELETE FROM projects WHERE id=?').run(validId(id))}
+  setupComplete(): boolean {
+    const row=this.db.prepare("SELECT value FROM preferences WHERE key='setup_complete'").get() as Row|undefined
+    return row?.value==='1'
+  }
+  markSetupComplete():void {
+    this.db.prepare("INSERT INTO preferences(key,value) VALUES('setup_complete','1') ON CONFLICT(key) DO UPDATE SET value='1'").run()
+  }
   editor(): string {
     const row=this.db.prepare("SELECT value FROM preferences WHERE key='editor'").get() as Row|undefined
     return ['system','vscode','cursor'].includes(String(row?.value))?String(row?.value):'system'
