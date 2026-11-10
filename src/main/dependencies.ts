@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { delimiter, isAbsolute, join } from 'node:path'
+import { homedir } from 'node:os'
 import { promisify } from 'node:util'
 import type { DependencyInfo, DependencyInstallResult } from '../shared/types'
 
@@ -18,7 +19,20 @@ export const definitions:readonly Definition[] = [
  {id:'maven',name:'Maven',purpose:'Compilación de proyectos Java (opcional)',cmd:'mvn',args:['--version'],winId:null,apt:'maven',recommended:false}
 ]
 export function findCommand(cmd:string):string {
-  if(process.platform!=='win32')return cmd
+  if(process.platform!=='win32'){
+    if(isAbsolute(cmd))return cmd
+    const home=homedir()
+    const local=join(home,'.local','bin',cmd)
+    const toolbox=join(home,'.local','share','JetBrains','Toolbox','scripts',cmd)
+    if(existsSync(local))return local
+    if(existsSync(toolbox))return toolbox
+    // The AppImage may have been launched from the graphical menu with a minimal PATH.
+    const segments=(process.env.PATH||'').split(delimiter)
+    for(const base of segments){
+      if(base&&existsSync(join(base,cmd)))return join(base,cmd)
+    }
+    return cmd
+  }
   const programFiles=process.env.ProgramFiles||'C:\\Program Files'
   const local=process.env.LOCALAPPDATA||''
   const candidates:Record<string,string[]>={

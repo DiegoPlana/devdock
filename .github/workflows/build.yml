@@ -1,4 +1,4 @@
-name: DEVDОCK Build
+name: DEVDОCK Build and Release
 on:
   push:
     branches: [main]
@@ -19,7 +19,7 @@ jobs:
       - run: npm run dist:win
       - uses: actions/upload-artifact@v4
         with:
-          name: DEVDОCK-Windows-v0.3.1
+          name: devdock-windows
           path: release/*.exe
           if-no-files-found: error
   linux:
@@ -35,6 +35,33 @@ jobs:
       - run: npm run dist:linux
       - uses: actions/upload-artifact@v4
         with:
-          name: DEVDОCK-Linux-v0.3.1
+          name: devdock-linux
           path: release/*.AppImage
           if-no-files-found: error
+  publish:
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: devdock-*
+          path: release
+          merge-multiple: true
+      - name: Publish new version once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v${VERSION}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; no overwrite"
+          else
+            gh release create "$TAG" release/*.exe release/*.AppImage \
+              --target "$GITHUB_SHA" --title "DEVDОCK $TAG" \
+              --notes "DEVDОCK $TAG — instaladores Windows y Linux. Guarda tus datos locales y consulta las novedades en el README."
+          fi

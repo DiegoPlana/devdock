@@ -5,6 +5,8 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
 import { Store, validId } from './store'
+import { planOpen, assertEditorChoice, launchEditor, executablePath } from './openers'
+import { checkUpdates, installUpdate } from './updates'
 import { definitions, listDependencies, installDependency } from './dependencies'
 import { snapshot, checked, exec, gitDetails, githubStatus, githubRepos, detectTools, builtins } from './cli'
 import type { Command } from '../shared/types'
@@ -55,6 +57,34 @@ function handlers():void{
   })
   ipcMain.handle('projects:update',(event,id:unknown,changes:unknown)=>{authorized(event);store.updateProject(id,changes)})
   ipcMain.handle('projects:remove',(event,id:unknown)=>{authorized(event);store.removeProject(id)})
+  ipcMain.handle('projects:open-plan',(event,id:unknown)=>{
+    authorized(event)
+    const root=pathFor(id)
+    return planOpen(root,store.projectEditor(id))
+  })
+  ipcMain.handle('projects:choose-executable',async event=>{
+    authorized(event)
+    if(!win) return null
+    const result=await dialog.showOpenDialog(win,{title:'Selecciona el ejecutable del IDE',properties:['openFile']})
+    if(result.canceled||!result.filePaths[0])return null
+    const selected='custom:'+result.filePaths[0]
+    assertEditorChoice(selected)
+    return selected
+  })
+  ipcMain.handle('projects:open-with',async(event,id:unknown,choice:unknown,remember:unknown)=>{
+    authorized(event)
+    if(typeof remember!=='boolean')throw new Error('Opción inválida')
+    const root=pathFor(id)
+    const selected=assertEditorChoice(choice)
+    if(selected==='files'){
+      const error=await shell.openPath(root)
+      if(error)throw new Error(error)
+    } else await launchEditor(root,selected)
+    if(remember)store.setProjectEditor(id,selected)
+    store.markOpen(id)
+  })
+  ipcMain.handle('updates:check',event=>{authorized(event);return checkUpdates()})
+  ipcMain.handle('updates:install',event=>{authorized(event);return installUpdate()})
   ipcMain.handle('projects:open',async(event,id:unknown,inEditor:unknown)=>{
     authorized(event);if(typeof inEditor!=='boolean')throw new Error('Opción no válida')
     const path=pathFor(id)

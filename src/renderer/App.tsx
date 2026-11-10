@@ -5,7 +5,7 @@ import type { FormEvent } from 'react'
 import { LayoutDashboard, FolderGit2, GitBranch, Github, Terminal, BookOpen, Wrench, Settings,
   RefreshCw, Plus, ArrowRight, FolderOpen, Star, Trash2, Link2, Code2, Save, Activity,
   CheckCircle2, AlertCircle, DownloadCloud, Search, ShieldCheck, X, Clock3, Cloud, Copy } from 'lucide-react'
-import type { Project,RemoteRepo,GithubStatus,GitDetails,Command,RunResult,Resource,ToolInfo } from '../shared/types'
+import type { Project,RemoteRepo,GithubStatus,GitDetails,Command,RunResult,Resource,ToolInfo,OpenPlan,UpdateInfo } from '../shared/types'
 
 type Page='home'|'projects'|'git'|'github'|'commands'|'library'|'tools'|'dependencies'|'settings'
 const nav=[
@@ -48,6 +48,10 @@ export default function App(){
   const[tools,setTools]=useState<ToolInfo[]>([])
   const[toolsLoaded,setToolsLoaded]=useState(false)
   const[loading,setLoading]=useState(true)
+  const[openChooser,setOpenChooser]=useState<{id:string;plan:OpenPlan;choice:string}|null>(null)
+  const[rememberEditor,setRememberEditor]=useState(true)
+  const[updates,setUpdates]=useState<UpdateInfo|null>(null)
+  const[updateBusy,setUpdateBusy]=useState(false)
 
   async function refreshProjects(){setProjects(await window.devdock.projects())}
   async function refreshCommands(){setCommands(await window.devdock.commands())}
@@ -72,7 +76,45 @@ export default function App(){
     await action(async()=>{const p=await window.devdock.addProject();if(p){await refreshProjects();setNotice({text:'Proyecto añadido: '+p.name,error:false})}})
   }
   async function openProject(id:string,inEditor:boolean){
-    await action(async()=>{await window.devdock.openProject(id,inEditor);await refreshProjects()})
+    if(!inEditor){await action(async()=>{await window.devdock.openProject(id,false);await refreshProjects()});return}
+    await action(async()=>{
+      const plan=await window.devdock.projectOpenPlan(id)
+      if(plan.saved){
+        await window.devdock.openProjectWith(id,plan.saved,false)
+        await refreshProjects()
+      }else{
+        setRememberEditor(true)
+        setOpenChooser({id,plan,choice:plan.suggested||'files'})
+      }
+    })
+  }
+  async function launchChoice(){
+    if(!openChooser)return
+    const {id,choice}=openChooser
+    if(await action(async()=>{await window.devdock.openProjectWith(id,choice,rememberEditor);await refreshProjects()})){
+      setOpenChooser(null)
+    }
+  }
+  async function browseEditor(){
+    if(!openChooser)return
+    await action(async()=>{
+      const chosen=await window.devdock.chooseEditorExecutable()
+      if(chosen)setOpenChooser({...openChooser,choice:chosen})
+    })
+  }
+  async function checkForUpdates(){
+    setUpdateBusy(true)
+    try {setUpdates(await window.devdock.checkUpdates());setNotice(null)}
+    catch(error){setNotice({text:describe(error),error:true})}
+    finally{setUpdateBusy(false)}
+  }
+  async function applyUpdate(){
+    setUpdateBusy(true)
+    try{
+      const result=await window.devdock.installUpdate()
+      setNotice({text:result.message,error:!result.ok})
+    }catch(error){setNotice({text:describe(error),error:true})}
+    finally{setUpdateBusy(false)}
   }
   async function favorite(p:Project){await action(async()=>{await window.devdock.updateProject(p.id,{favorite:!p.favorite});await refreshProjects()})}
   async function remove(p:Project){
@@ -176,7 +218,7 @@ export default function App(){
       <nav>{nav.map(n=><button key={n.id} className={'nav '+(page===n.id?'selected':'')} onClick={()=>selectPage(n.id)}>
         <n.icon size={18}/><span>{n.name}</span>{n.id==='projects'&&<small>{projects.length}</small>}
       </button>)}</nav>
-      <div className="sidebar-bottom"><span className="dot"/> ENTORNO LOCAL <span>v0.3.1</span></div>
+      <div className="sidebar-bottom"><span className="dot"/> ENTORNO LOCAL <span>v0.4.0</span></div>
     </aside>
     <main><header className="topbar"><div>Workspace <span>/</span> <strong>{titles[page]}</strong></div><div className="top-right"><span className="online"><span className="dot"/> LOCAL</span><div className="avatar"><Code2 size={18}/></div></div></header>
       <section className="content">
@@ -282,9 +324,42 @@ export default function App(){
             <div className="module"><h3><FolderOpen size={18}/> Acceso directo de DEVDОCK</h3>
               <p>Si has eliminado el icono del escritorio, puedes recuperarlo aquí sin volver a instalar la aplicación. Disponible en Windows instalado.</p>
               <button className="secondary" disabled={busy} onClick={()=>void action(async()=>{await window.devdock.createDesktopShortcut()},'Acceso directo actualizado en el escritorio')}>Crear acceso directo</button></div>
+            <div className="module"><h3><DownloadCloud size={18}/> Actualizaciones de DEVDОCK</h3>
+              <p>Comprueba las versiones publicadas en GitHub Releases. La descarga se verifica con SHA-256 y tus proyectos y preferencias permanecen en el ordenador.</p>
+              <p><b>Versión instalada:</b> {updates?.current||'0.4.0'}{updates?.latest&&<> · <b>Última publicación:</b> {updates.latest}</>}</p>
+              {updates&&<p>{updates.message}</p>}
+              <div className="card-buttons">
+                <button className="secondary" disabled={updateBusy} onClick={()=>void checkForUpdates()}><RefreshCw size={16}/> {updateBusy?'Comprobando…':'Buscar actualizaciones'}</button>
+                {updates?.available&&updates.assetName&&<button className="primary" disabled={updateBusy} onClick={()=>void applyUpdate()}><DownloadCloud size={16}/> Descargar e instalar</button>}
+              </div>
+              <p className="hint">Se utiliza GitHub CLI para consultar también las publicaciones privadas. Si todavía no hay versiones en Releases, se mostrará un aviso.</p>
+            </div>
             <div className="module"><h3><ShieldCheck size={18}/> Privacidad</h3><p>Todos los proyectos y recursos se guardan en tu propio ordenador. GitHub se autentica mediante la sesión de GitHub CLI.</p></div>
           </>}
         </>}
-      </section><footer> <span><span className="dot"/> DEVDОCK LOCAL</span><span>Electron · React · TypeScript · SQLite · GitHub CLI &nbsp; | &nbsp; v0.3.1</span></footer>
-    </main><FirstRunSetup/></div>
+      </section><footer> <span><span className="dot"/> DEVDОCK LOCAL</span><span>Electron · React · TypeScript · SQLite · GitHub CLI &nbsp; | &nbsp; v0.4.0</span></footer>
+    </main>
+    {openChooser&&<div className="chooser-overlay" role="dialog" aria-modal="true" aria-label="Elegir herramienta para abrir proyecto">
+      <div className="chooser-panel">
+        <div className="chooser-header"><h2>¿Con qué herramienta quieres abrirlo?</h2><button className="icon-button" onClick={()=>setOpenChooser(null)} aria-label="Cerrar"><X size={20}/></button></div>
+        <p>Proyecto detectado: <strong>{openChooser.plan.label}</strong>. Puedes escoger un IDE instalado o localizar su ejecutable.</p>
+        <div className="chooser-options">
+          {openChooser.plan.options.map(option=><label key={option.id} className={'chooser-option '+(!option.installed?'unavailable':'')}>
+            <input type="radio" name="editor-tool" value={option.id} disabled={!option.installed}
+              checked={openChooser.choice===option.id} onChange={()=>setOpenChooser({...openChooser,choice:option.id})}/>
+            <span>{option.name}</span><small>{option.installed?'Detectado':'No encontrado'}</small>
+            {option.id===openChooser.plan.suggested&&<small className="chooser-recommended">Sugerido</small>}
+          </label>)}
+          <label className="chooser-option"><input type="radio" name="editor-tool" checked={openChooser.choice==='files'} onChange={()=>setOpenChooser({...openChooser,choice:'files'})}/><span>Explorador de archivos</span></label>
+          {openChooser.choice.startsWith('custom:')&&<label className="chooser-option"><input type="radio" name="editor-tool" checked readOnly/><span>Ejecutable personalizado</span><small title={openChooser.choice.slice(7)}>{openChooser.choice.slice(7).split(/[\\/]/).pop()}</small></label>}
+        </div>
+        <button className="secondary" onClick={()=>void browseEditor()} disabled={busy}><FolderOpen size={16}/> Seleccionar otro ejecutable…</button>
+        <label className="chooser-remember"><input type="checkbox" checked={rememberEditor} onChange={e=>setRememberEditor(e.target.checked)}/> Recordar esta elección para este proyecto</label>
+        <div className="chooser-footer">
+          <button className="secondary" onClick={()=>setOpenChooser(null)}>Cancelar</button>
+          <button className="primary" onClick={()=>void launchChoice()} disabled={busy}>Abrir proyecto <ArrowRight size={15}/></button>
+        </div>
+      </div>
+    </div>}
+    <FirstRunSetup/></div>
 }

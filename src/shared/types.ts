@@ -69,12 +69,32 @@ export interface DependencyInstallResult {
   ok: boolean
   details: string
 }
+export interface OpenPlan {
+  kind: 'minecraft'|'java'|'web'|'python'|'rust'|'general'
+  label: string
+  suggested: string|null
+  saved: string|null
+  options: {id:string;name:string;installed:boolean}[]
+}
+export interface UpdateInfo {
+  current:string
+  latest:string|null
+  available:boolean
+  assetName:string|null
+  releaseUrl:string|null
+  message:string
+}
 export interface DevdockAPI {
   projects(): Promise<Project[]>
   addProject(): Promise<Project | null>
   updateProject(id: string, changes: {name?:string;category?:string;favorite?:boolean}): Promise<void>
   removeProject(id: string): Promise<void>
   openProject(id: string, inEditor: boolean): Promise<void>
+  projectOpenPlan(id:string):Promise<OpenPlan>
+  chooseEditorExecutable():Promise<string|null>
+  openProjectWith(id:string,choice:string,remember:boolean):Promise<void>
+  checkUpdates():Promise<UpdateInfo>
+  installUpdate():Promise<{ok:boolean;message:string}>
   editor(): Promise<string>
   setEditor(editor: string): Promise<void>
   gitDetails(id: string): Promise<GitDetails>

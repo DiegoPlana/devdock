@@ -1,10 +1,10 @@
-# DEVDОCK v0.3.1
+# DEVDОCK v0.4.0
 
 Centro de productividad para proyectos y repositorios, con icono propio y asistente de preparación del entorno.
 
 ## Descargar e instalar
 
-Ve a **Actions → DEVDОCK Build → última ejecución correcta**. En **Artifacts** descarga `DEVDОCK-Windows-v0.3.1` (Windows) o `DEVDОCK-Linux-v0.3.1` (Linux). Descomprime e instala el ejecutable. GitHub Actions genera el .exe y el AppImage; el instalador aún no está firmado.
+Ve a **Actions → DEVDОCK Build → última ejecución correcta**. En **Artifacts** descarga `devdock-windows` (Windows) o `devdock-linux` (Linux). Descomprime e instala el ejecutable. GitHub Actions genera el .exe y el AppImage; el instalador aún no está firmado.
 
 **El instalador es autónomo:** trae Electron y sus bibliotecas. **No necesitas instalar Node.js ni npm para usar DEVDОCK.** Node.js 22.12+ solo es necesario para desarrollar o compilar el proyecto fuente.
 
@@ -12,7 +12,7 @@ El instalador de Windows intenta crear accesos directos en Inicio y Escritorio. 
 
 ## Nuevo: asistente y dependencias
 
-Al arrancar la versión 0.3.1 por primera vez, aparece un asistente de bienvenida. Detecta las herramientas instaladas y propone **Git** y **GitHub CLI**; Docker, Node.js, Python, Java y Maven son opcionales.
+Al arrancar la versión 0.4.0 por primera vez, aparece un asistente de bienvenida. Detecta las herramientas instaladas y propone **Git** y **GitHub CLI**; Docker, Node.js, Python, Java y Maven son opcionales.
 
 - Selecciona lo que quieras instalar y pulsa **Instalar seleccionadas**.
 - DEVDОCK vuelve a preguntarte antes de cada instalación; puedes cancelarla.
@@ -52,3 +52,17 @@ npm run dist:win
 - Instalador integrado para actualizaciones de DEVDОCK.
 
 Para reportar errores utiliza **Issues** en GitHub.
+
+## Novedades 0.4.0
+
+- **Abrir proyecto:** analiza la estructura (Java, Fabric, web, Python o Rust), sugiere un IDE instalado y ofrece elegir un ejecutable manualmente. Al marcar «Recordar», guarda una elección distinta para cada proyecto.
+- **GitHub CLI en Linux:** detecta también herramientas instaladas en `~/.local/bin`, sin `sudo`, incluso al abrir la AppImage desde el menú gráfico.
+- **Actualizaciones:** en Ajustes → Actualizaciones puedes buscar versiones en GitHub Releases. Con GitHub CLI autenticado, comprueba las publicaciones del repositorio privado. Solo instala una versión posterior con un recurso y digest SHA-256 válidos; exige confirmación.
+- En Linux una AppImage ubicada en tu carpeta personal se reemplaza al cerrar y se vuelve a abrir. Se conserva una copia `.previous`. En Windows se descarga y abre el asistente NSIS para completar la actualización.
+- La base de datos SQLite existente se reutiliza y el nuevo ajuste por proyecto se guarda en una tabla adicional sin modificar las anteriores.
+
+Las actualizaciones **no se ejecutan silenciosamente**. En una ubicación de solo lectura o una instalación protegida se requiere mover el ejecutable a una carpeta escribible o solicitar permisos al administrador.
+
+## Publicación
+Cada cambio en `main` compila Windows y Linux en Actions; si el número de versión todavía no se ha publicado, el workflow crea una publicación `vX.Y.Z` en Releases con ambos archivos verificados por GitHub. El botón de actualización usa esas publicaciones, no artefactos temporales de Actions.
+

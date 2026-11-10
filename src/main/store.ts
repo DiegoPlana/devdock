@@ -29,6 +29,7 @@ export class Store {
     this.db.exec("CREATE TABLE IF NOT EXISTS preferences (key TEXT PRIMARY KEY,value TEXT NOT NULL)")
     this.db.exec("CREATE TABLE IF NOT EXISTS commands (id TEXT PRIMARY KEY,name TEXT NOT NULL,executable TEXT NOT NULL,args TEXT NOT NULL,category TEXT NOT NULL)")
     this.db.exec("CREATE TABLE IF NOT EXISTS library (id TEXT PRIMARY KEY,title TEXT NOT NULL,kind TEXT NOT NULL,category TEXT NOT NULL,content TEXT NOT NULL,created_at TEXT NOT NULL)")
+    this.db.exec("CREATE TABLE IF NOT EXISTS project_editors (project_id TEXT PRIMARY KEY, editor TEXT NOT NULL)")
   }
   projects(): Project[] {
     const rows=this.db.prepare('SELECT * FROM projects ORDER BY favorite DESC, COALESCE(last_opened_at,created_at) DESC').all() as Row[]
@@ -63,7 +64,21 @@ export class Store {
       .run(name,category,Number(favorite),new Date().toISOString(),old.id)
   }
   markOpen(id:unknown): void { this.project(id);this.db.prepare('UPDATE projects SET last_opened_at=? WHERE id=?').run(new Date().toISOString(),validId(id)) }
-  removeProject(id:unknown): void {this.project(id);this.db.prepare('DELETE FROM projects WHERE id=?').run(validId(id))}
+  projectEditor(id:unknown):string|null {
+    this.project(id)
+    const row=this.db.prepare('SELECT editor FROM project_editors WHERE project_id=?').get(validId(id)) as Row|undefined
+    return row?String(row.editor):null
+  }
+  setProjectEditor(id:unknown,editor:string):void{
+    this.project(id)
+    if(editor.length>2048||!editor)throw new Error('Editor inválido')
+    this.db.prepare('INSERT INTO project_editors(project_id,editor) VALUES(?,?) ON CONFLICT(project_id) DO UPDATE SET editor=excluded.editor').run(validId(id),editor)
+  }
+  removeProject(id:unknown): void {
+    this.project(id)
+    this.db.prepare('DELETE FROM project_editors WHERE project_id=?').run(validId(id))
+    this.db.prepare('DELETE FROM projects WHERE id=?').run(validId(id))
+  }
   setupComplete(): boolean {
     const row=this.db.prepare("SELECT value FROM preferences WHERE key='setup_complete'").get() as Row|undefined
     return row?.value==='1'
