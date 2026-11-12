@@ -1,6 +1,6 @@
 {
   "name": "devdock",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Personal developer workspace with GitHub integration",
   "private": true,
   "type": "module",
@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "dist:win": "npm run build && electron-builder --win nsis --x64 --publish never",
+    "dist:win:arm64": "npm run build && electron-builder --win nsis --arm64 --publish never",
     "dist:linux": "npm run build && electron-builder --linux AppImage --x64 --publish never",
     "predev": "node scripts/generate-icons.mjs",
     "prebuild": "node scripts/generate-icons.mjs"

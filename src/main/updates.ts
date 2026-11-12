@@ -19,7 +19,7 @@ function compareVersions(a:string,b:string):number {
   return 0
 }
 function platformAsset(r:Release):Asset|undefined {
-  const ending=process.platform==='linux'?'-linux-x86_64.AppImage':process.platform==='win32'?'-win-x64.exe':null
+  const ending=process.platform==='linux'?'-linux-x86_64.AppImage':process.platform==='win32'?(process.arch==='arm64'?'-win-arm64.exe':'-win-x64.exe'):null
   if(!ending)return undefined
   return r.assets.find(a=>a.name.includes('DEVD')&&a.name.endsWith(ending))
 }

@@ -1,4 +1,4 @@
-# DEVDОCK v0.4.0
+# DEVDОCK v0.4.1
 
 Centro de productividad para proyectos y repositorios, con icono propio y asistente de preparación del entorno.
 
@@ -66,3 +66,12 @@ Las actualizaciones **no se ejecutan silenciosamente**. En una ubicación de sol
 ## Publicación
 Cada cambio en `main` compila Windows y Linux en Actions; si el número de versión todavía no se ha publicado, el workflow crea una publicación `vX.Y.Z` en Releases con ambos archivos verificados por GitHub. El botón de actualización usa esas publicaciones, no artefactos temporales de Actions.
 
+
+## Novedad 0.4.1: Windows ARM64
+
+- Nueva compilación nativa para equipos con **Windows 11 ARM64** (Snapdragon, Surface ARM y similares).
+- En GitHub Releases encontrarás `DEVD.CK-0.4.1-win-arm64.exe`. No es el instalador Linux ARM.
+- Continúan disponibles `DEVD.CK-0.4.1-win-x64.exe` y `DEVD.CK-0.4.1-linux-x86_64.AppImage`.
+- El actualizador integrado ahora selecciona automáticamente el instalador Windows ARM64 si la app corre en Electron ARM64.
+- Para compilar desde el repositorio: `npm run dist:win:arm64`. GitHub Actions lo genera en una ejecución Windows, sin necesitar un PC Windows ARM64 local.
+- No se modifican las bases SQLite ni las preferencias del usuario.
